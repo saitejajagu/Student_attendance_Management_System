@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block breadcrumb %}Home / Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Stats Cards -->
+    <div class="stats-row">
+        <div class="stat-card stat-blue">
+            <div class="stat-body">
+                <div class="stat-info">
+                    <span class="stat-label">Total Students</span>
+                    <span class="stat-value">{{ total_students }}</span>
+                </div>
+                <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+            </div>
+            <div class="stat-footer"><i class="fas fa-arrow-right"></i> <a
+                    href="{{ url_for('students.list_students') }}">View all students</a></div>
+        </div>
+        <div class="stat-card stat-purple">
+            <div class="stat-body">
+                <div class="stat-info">
+                    <span class="stat-label">Total Subjects</span>
+                    <span class="stat-value">{{ total_subjects }}</span>
+                </div>
+                <div class="stat-icon"><i class="fas fa-book"></i></div>
+            </div>
+            <div class="stat-footer"><i class="fas fa-arrow-right"></i> <a
+                    href="{{ url_for('subjects.list_subjects') }}">View all subjects</a></div>
+        </div>
+        <div class="stat-card stat-green">
+            <div class="stat-body">
+                <div class="stat-info">
+                    <span class="stat-label">Today's Records</span>
+                    <span class="stat-value">{{ today_records }}</span>
+                </div>
+                <div class="stat-icon"><i class="fas fa-clipboard-check"></i></div>
+            </div>
+            <div class="stat-footer"><i class="fas fa-calendar-day"></i> {{ today }}</div>
+        </div>
+        <div class="stat-card stat-orange">
+            <div class="stat-body">
+                <div class="stat-info">
+                    <span class="stat-label">Today's Rate</span>
+                    <span class="stat-value">{{ today_rate }}%</span>
+                </div>
+                <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
+            </div>
+            <div class="stat-footer"><i class="fas fa-arrow-right"></i> <a
+                    href="{{ url_for('reports.view_reports') }}">View reports</a></div>
+        </div>
+    </div>
+
+    <!-- Chart + Recent -->
+    <div class="dashboard-bottom">
+        <div class="chart-card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-chart-bar"></i> Weekly Attendance Overview</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="weeklyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="recent-card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-clock"></i> Recent Activity</h3>
+                <a href="{{ url_for('reports.view_reports') }}" class="card-action">View All</a>
+            </div>
+            <div class="recent-list">
+                {% if recent %}
+                {% for att, stu, sub in recent %}
+                <div class="recent-item">
+                    <div class="recent-avatar">{{ stu.full_name[0] }}</div>
+                    <div class="recent-info">
+                        <span class="recent-name">{{ stu.full_name }}</span>
+                        <span class="recent-sub">{{ sub.name }} • {{ att.date.strftime('%d %b') }}</span>
+                    </div>
+                    <span class="badge badge-{{ att.status.lower() }}">{{ att.status }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state-sm">
+                    <i class="fas fa-inbox"></i>
+                    <p>No attendance records yet.</p>
+                    <a href="{{ url_for('attendance.mark_attendance') }}" class="btn btn-sm btn-primary">Mark
+                        Attendance</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const weeklyData = {{ weekly_data | tojson }};
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: weeklyData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Present',
+                    data: weeklyData.map(d => d.present),
+                    backgroundColor: 'rgba(99, 202, 183, 0.8)',
+                    borderRadius: 6,
+                },
+                {
+                    label: 'Absent',
+                    data: weeklyData.map(d => d.absent),
+                    backgroundColor: 'rgba(255, 107, 107, 0.8)',
+                    borderRadius: 6,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#444466', font: { family: 'Inter' } } }
+            },
+            scales: {
+                x: { stacked: true, ticks: { color: '#444466' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { stacked: true, ticks: { color: '#444466' }, grid: { color: 'rgba(0,0,0,0.05)' }, beginAtZero: true }
+            }
+        }
+    });
+</script>
+{% endblock %}

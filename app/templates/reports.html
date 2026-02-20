@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Attendance Reports{% endblock %}
+{% block breadcrumb %}Home / Reports{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="filter-card">
+    <form method="GET" action="{{ url_for('reports.view_reports') }}" class="filter-form">
+        <div class="filter-row">
+            <div class="form-group">
+                <label class="form-label">Student</label>
+                <select name="student_id" class="form-control">
+                    <option value="">All Students</option>
+                    {% for s in students %}
+                    <option value="{{ s.id }}" {% if filters.student_id==s.id|string %}selected{% endif %}>{{
+                        s.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Subject</label>
+                <select name="subject_id" class="form-control">
+                    <option value="">All Subjects</option>
+                    {% for s in subjects %}
+                    <option value="{{ s.id }}" {% if filters.subject_id==s.id|string %}selected{% endif %}>{{ s.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">From Date</label>
+                <input type="date" name="date_from" class="form-control" value="{{ filters.date_from }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">To Date</label>
+                <input type="date" name="date_to" class="form-control" value="{{ filters.date_to }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-control">
+                    <option value="">All Statuses</option>
+                    <option value="Present" {% if filters.status=='Present' %}selected{% endif %}>Present</option>
+                    <option value="Absent" {% if filters.status=='Absent' %}selected{% endif %}>Absent</option>
+                    <option value="Late" {% if filters.status=='Late' %}selected{% endif %}>Late</option>
+                    <option value="Excused" {% if filters.status=='Excused' %}selected{% endif %}>Excused</option>
+                </select>
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Apply Filters</button>
+            <a href="{{ url_for('reports.view_reports') }}" class="btn btn-ghost"><i class="fas fa-undo"></i> Reset</a>
+            <a href="{{ url_for('reports.export_csv', **filters) }}" class="btn btn-success">
+                <i class="fas fa-file-csv"></i> Export CSV
+            </a>
+        </div>
+    </form>
+</div>
+
+{% if summary %}
+<!-- Summary Table -->
+<div class="data-card" style="margin-bottom:1.5rem">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-chart-line"></i> Student Summary</h3>
+        <span class="text-muted">{{ records|length }} records found</span>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Class</th>
+                <th>Total</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Late</th>
+                <th>Excused</th>
+                <th>Attendance %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in summary %}
+            <tr>
+                <td>
+                    <div class="name-cell">
+                        <div class="avatar-sm">{{ s.student.full_name[0] }}</div>
+                        {{ s.student.full_name }}
+                    </div>
+                </td>
+                <td>{{ s.student.class_name or '—' }}</td>
+                <td>{{ s.total }}</td>
+                <td><span class="badge badge-present">{{ s.present }}</span></td>
+                <td><span class="badge badge-absent">{{ s.absent }}</span></td>
+                <td><span class="badge badge-late">{{ s.late }}</span></td>
+                <td><span class="badge badge-excused">{{ s.excused }}</span></td>
+                <td>
+                    <div class="progress-cell">
+                        <div class="progress-bar-wrap">
+                            <div class="progress-bar-fill {% if s.percentage >= 75 %}fill-green{% elif s.percentage >= 50 %}fill-orange{% else %}fill-red{% endif %}"
+                                style="width: {{ s.percentage }}%"></div>
+                        </div>
+                        <span
+                            class="progress-pct {% if s.percentage >= 75 %}text-green{% elif s.percentage >= 50 %}text-orange{% else %}text-red{% endif %}">{{
+                            s.percentage }}%</span>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Detailed Records -->
+<div class="data-card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-list"></i> Detailed Records</h3>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Student ID</th>
+                <th>Subject</th>
+                <th>Class</th>
+                <th>Status</th>
+                <th>Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if records %}
+            {% for att, stu, sub in records %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ att.date.strftime('%d %b %Y') }}</td>
+                <td>
+                    <div class="name-cell">
+                        <div class="avatar-sm">{{ stu.full_name[0] }}</div>
+                        {{ stu.full_name }}
+                    </div>
+                </td>
+                <td><span class="badge badge-neutral">{{ stu.student_id }}</span></td>
+                <td>{{ sub.name }}</td>
+                <td>{{ stu.class_name or '—' }}</td>
+                <td><span class="badge badge-{{ att.status.lower() }}">{{ att.status }}</span></td>
+                <td class="text-muted">{{ att.remarks or '—' }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="8" class="empty-row"><i class="fas fa-inbox"></i> No records found. Try adjusting filters
+                    or mark some attendance first.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

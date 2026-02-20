@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}User Management{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block breadcrumb %}Admin / Users{% endblock %}
+
+{% block content %}
+<div
+    style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+    <!-- Role Filter Tabs -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        {% for label, val in [('All', ''), ('Admin', 'admin'), ('Teacher', 'teacher'), ('Student', 'student')] %}
+        <a href="{{ url_for('admin.list_users') }}{% if val %}?role={{ val }}{% endif %}"
+            style="padding:6px 16px; border-radius:999px; font-size:0.82rem; font-weight:600; text-decoration:none; transition:all .2s;
+                  {% if role_filter == val %}background:linear-gradient(135deg,#e91e8c,#ff4db8); color:#fff;{% else %}background:rgba(0,0,0,0.05); color:#7777aa;{% endif %}">
+            {{ label }}
+        </a>
+        {% endfor %}
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('createModal').style.display='flex'">
+        <i class="fas fa-user-plus"></i> Create User
+    </button>
+</div>
+
+<!-- Users Table -->
+<div class="table-card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-users-cog"></i> Users
+            <span style="font-size:0.8rem; font-weight:400; color:#7777aa; margin-left:6px;">({{ users|length }})</span>
+        </h3>
+    </div>
+    {% if users %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Joined</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div
+                                style="width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:0.9rem; flex-shrink:0;">
+                                {{ (user.full_name or user.username)[0].upper() }}
+                            </div>
+                            <span style="font-weight:600; color:#1a1a2e;">{{ user.full_name or '—' }}</span>
+                        </div>
+                    </td>
+                    <td><code
+                            style="background:rgba(233,30,140,0.06); color:#e91e8c; padding:2px 8px; border-radius:4px; font-size:0.82rem;">{{ user.username }}</code>
+                    </td>
+                    <td style="color:#7777aa;">{{ user.email or '—' }}</td>
+                    <td>
+                        <span style="padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:600;
+                            {% if user.role == 'admin' %}background:rgba(252,129,129,0.15); color:#fc8181; border:1px solid rgba(252,129,129,0.3);
+                            {% elif user.role == 'teacher' %}background:rgba(99,202,183,0.15); color:#63cab7; border:1px solid rgba(99,202,183,0.3);
+                            {% else %}background:rgba(102,126,234,0.15); color:#a78bfa; border:1px solid rgba(102,126,234,0.3);{% endif %}
+                        ">{{ user.role.title() }}</span>
+                    </td>
+                    <td style="color:#7777aa; font-size:0.82rem;">{{ user.created_at.strftime('%d %b %Y') }}</td>
+                    <td>
+                        <span style="padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:600;
+                            {% if user.is_active_user %}background:rgba(99,202,183,0.15); color:#63cab7; border:1px solid rgba(99,202,183,0.3);
+                            {% else %}background:rgba(252,129,129,0.12); color:#fc8181; border:1px solid rgba(252,129,129,0.25);{% endif %}
+                        ">{{ 'Active' if user.is_active_user else 'Inactive' }}</span>
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:6px;">
+                            <button class="btn-icon" title="Edit" onclick="openEditModal({{ user.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% if user.id != current_user.id %}
+                            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}"
+                                style="display:inline;" onsubmit="return confirm('Toggle this user?')">
+                                <button type="submit" class="btn-icon"
+                                    title="{{ 'Deactivate' if user.is_active_user else 'Activate' }}"
+                                    style="color:{% if user.is_active_user %}#fc8181{% else %}#63cab7{% endif %};">
+                                    <i class="fas fa-{{ 'user-slash' if user.is_active_user else 'user-check' }}"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-users"></i></div>
+        <h3>No users found</h3>
+        <p>Create your first user account.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create User Modal -->
+<div id="createModal"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; padding:16px; backdrop-filter: blur(4px);">
+    <div
+        style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:480px; border:1px solid rgba(233,30,140,0.15); box-shadow:0 15px 50px rgba(0,0,0,0.15);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <h3 style="margin:0; font-size:1.1rem; color:#1a1a2e;"><i class="fas fa-user-plus"
+                    style="color:#e91e8c; margin-right:8px;"></i>Create New User</h3>
+            <button onclick="document.getElementById('createModal').style.display='none'"
+                style="background:none; border:none; color:#7777aa; cursor:pointer; font-size:1.1rem;"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.create_user') }}">
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Full Name</label>
+                <input type="text" name="full_name" class="form-control" placeholder="e.g. John Smith">
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Username <span style="color:#fc8181;">*</span></label>
+                <input type="text" name="username" class="form-control" required placeholder="e.g. jsmith">
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" placeholder="user@example.com">
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Role <span style="color:#fc8181;">*</span></label>
+                <select name="role" class="form-control" id="createRoleSelect" onchange="toggleStudentLink(this.value)">
+                    <option value="teacher">Teacher</option>
+                    <option value="student">Student</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="form-group" id="studentLinkGroup" style="display:none; margin-bottom:14px;">
+                <label class="form-label">Link to Student Record</label>
+                <select name="student_link_id" class="form-control">
+                    <option value="">— Select student —</option>
+                    {% for s in students_unlinked %}
+                    <option value="{{ s.id }}">{{ s.full_name }} ({{ s.student_id }})</option>
+                    {% endfor %}
+                </select>
+                <small style="color:#718096; font-size:0.75rem;">Only unlinked students are shown.</small>
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="form-label">Password <span style="color:#fc8181;">*</span></label>
+                <input type="password" name="password" class="form-control" required placeholder="Min. 6 characters">
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary"
+                    onclick="document.getElementById('createModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Create User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editModal"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; padding:16px; backdrop-filter: blur(4px);">
+    <div
+        style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:480px; border:1px solid rgba(233,30,140,0.15); box-shadow:0 15px 50px rgba(0,0,0,0.15);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <h3 style="margin:0; font-size:1.1rem; color:#1a1a2e;"><i class="fas fa-edit"
+                    style="color:#e91e8c; margin-right:8px;"></i>Edit User</h3>
+            <button onclick="document.getElementById('editModal').style.display='none'"
+                style="background:none; border:none; color:#7777aa; cursor:pointer; font-size:1.1rem;"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        <form method="POST" id="editForm" action="">
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Full Name</label>
+                <input type="text" name="full_name" id="editFullName" class="form-control">
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" id="editEmail" class="form-control">
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label">Role</label>
+                <select name="role" id="editRole" class="form-control">
+                    <option value="teacher">Teacher</option>
+                    <option value="student">Student</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="form-label">New Password <span style="color:#718096; font-size:0.75rem;">(leave blank to
+                        keep current)</span></label>
+                <input type="password" name="password" class="form-control" placeholder="Leave blank to keep current">
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary"
+                    onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleStudentLink(role) {
+        document.getElementById('studentLinkGroup').style.display = (role === 'student') ? 'block' : 'none';
+    }
+
+    function openEditModal(userId) {
+        fetch(`/admin/users/get/${userId}`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('editFullName').value = data.full_name;
+                document.getElementById('editEmail').value = data.email;
+                document.getElementById('editRole').value = data.role;
+                document.getElementById('editForm').action = `/admin/users/edit/${data.id}`;
+                document.getElementById('editModal').style.display = 'flex';
+            });
+    }
+
+    // Close modals on backdrop click
+    ['createModal', 'editModal'].forEach(id => {
+        document.getElementById(id).addEventListener('click', function (e) {
+            if (e.target === this) this.style.display = 'none';
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}Mark Attendance{% endblock %}
+{% block page_title %}Mark Attendance{% endblock %}
+{% block breadcrumb %}Home / Attendance{% endblock %}
+
+{% block content %}
+<!-- Controls Bar -->
+<form method="GET" action="{{ url_for('attendance.mark_attendance') }}" class="attendance-controls">
+    <div class="control-card">
+        <div class="control-group">
+            <label class="form-label"><i class="fas fa-book"></i> Select Subject</label>
+            <select name="subject_id" class="form-control" required id="subjectSelect">
+                <option value="">— Choose Subject —</option>
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}" {% if selected_subject and selected_subject.id==subject.id %}selected{%
+                    endif %}>
+                    {{ subject.name }} ({{ subject.code }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="control-group">
+            <label class="form-label"><i class="fas fa-calendar"></i> Date</label>
+            <input type="date" name="date" class="form-control" value="{{ selected_date }}" max="{{ selected_date }}">
+        </div>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-users"></i> Load Students
+        </button>
+    </div>
+</form>
+
+{% if students %}
+<form method="POST" action="{{ url_for('attendance.mark_attendance') }}" id="attendanceForm">
+    <input type="hidden" name="subject_id" value="{{ selected_subject.id }}">
+    <input type="hidden" name="attendance_date" value="{{ selected_date }}">
+
+    <div class="attendance-toolbar">
+        <div class="att-info">
+            <span class="att-badge"><i class="fas fa-book"></i> {{ selected_subject.name }}</span>
+            <span class="att-badge"><i class="fas fa-calendar"></i> {{ selected_date }}</span>
+            <span class="att-badge"><i class="fas fa-users"></i> {{ students|length }} Students</span>
+        </div>
+        <div class="bulk-actions">
+            <button type="button" class="btn btn-sm btn-success-outline" onclick="markAll('Present')">
+                <i class="fas fa-check-double"></i> All Present
+            </button>
+            <button type="button" class="btn btn-sm btn-danger-outline" onclick="markAll('Absent')">
+                <i class="fas fa-times"></i> All Absent
+            </button>
+        </div>
+    </div>
+
+    <div class="attendance-grid" id="attendanceGrid">
+        {% for student in students %}
+        {% set existing = existing_map.get(student.id) %}
+        <div class="att-card" id="attCard_{{ student.id }}">
+            <div class="att-card-header">
+                <div class="att-avatar">{{ student.full_name[0] }}</div>
+                <div class="att-student-info">
+                    <span class="att-name">{{ student.full_name }}</span>
+                    <span class="att-id">{{ student.student_id }}{% if student.class_name %} • {{ student.class_name
+                        }}{% endif %}</span>
+                </div>
+            </div>
+            <div class="att-status-btns">
+                <label
+                    class="status-btn present-btn {% if existing and existing.status == 'Present' %}active{% elif not existing %}active{% endif %}">
+                    <input type="radio" name="status_{{ student.id }}" value="Present" {% if existing and
+                        existing.status=='Present' %}checked{% elif not existing %}checked{% endif %}
+                        onchange="updateCard({{ student.id }}, 'Present')">
+                    <i class="fas fa-check"></i> Present
+                </label>
+                <label class="status-btn absent-btn {% if existing and existing.status == 'Absent' %}active{% endif %}">
+                    <input type="radio" name="status_{{ student.id }}" value="Absent" {% if existing and
+                        existing.status=='Absent' %}checked{% endif %}
+                        onchange="updateCard({{ student.id }}, 'Absent')">
+                    <i class="fas fa-times"></i> Absent
+                </label>
+                <label class="status-btn late-btn {% if existing and existing.status == 'Late' %}active{% endif %}">
+                    <input type="radio" name="status_{{ student.id }}" value="Late" {% if existing and
+                        existing.status=='Late' %}checked{% endif %} onchange="updateCard({{ student.id }}, 'Late')">
+                    <i class="fas fa-clock"></i> Late
+                </label>
+                <label
+                    class="status-btn excused-btn {% if existing and existing.status == 'Excused' %}active{% endif %}">
+                    <input type="radio" name="status_{{ student.id }}" value="Excused" {% if existing and
+                        existing.status=='Excused' %}checked{% endif %}
+                        onchange="updateCard({{ student.id }}, 'Excused')">
+                    <i class="fas fa-file-alt"></i> Excused
+                </label>
+            </div>
+            <input type="text" name="remarks_{{ student.id }}" class="form-control remarks-input"
+                placeholder="Remarks (optional)"
+                value="{{ existing.remarks if existing and existing.remarks else '' }}">
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="attendance-submit">
+        <div class="att-summary" id="attSummary">
+            <span class="sum-present">Present: <strong id="countPresent">0</strong></span>
+            <span class="sum-absent">Absent: <strong id="countAbsent">0</strong></span>
+            <span class="sum-late">Late: <strong id="countLate">0</strong></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-save"></i> Save Attendance
+        </button>
+    </div>
+</form>
+
+{% elif selected_subject %}
+<div class="empty-state">
+    <i class="fas fa-user-slash"></i>
+    <h3>No students enrolled</h3>
+    <p>Add students first before marking attendance.</p>
+    <a href="{{ url_for('students.list_students') }}" class="btn btn-primary">Add Students</a>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-clipboard"></i>
+    <h3>Select a Subject & Date</h3>
+    <p>Choose a subject and a date above to start marking attendance.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function updateCard(id, status) {
+        const card = document.getElementById('attCard_' + id);
+        card.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = card.querySelector(`.${status.toLowerCase()}-btn`);
+        if (activeBtn) activeBtn.classList.add('active');
+        updateSummary();
+    }
+
+    function markAll(status) {
+        document.querySelectorAll('.att-card').forEach(card => {
+            const id = card.id.replace('attCard_', '');
+            const radio = card.querySelector(`input[value="${status}"]`);
+            if (radio) {
+                radio.checked = true;
+                updateCard(id, status);
+            }
+        });
+    }
+
+    function updateSummary() {
+        let present = 0, absent = 0, late = 0;
+        document.querySelectorAll('.att-card').forEach(card => {
+            const checked = card.querySelector('input[type="radio"]:checked');
+            if (checked) {
+                if (checked.value === 'Present') present++;
+                else if (checked.value === 'Absent') absent++;
+                else if (checked.value === 'Late' || checked.value === 'Excused') late++;
+            }
+        });
+        document.getElementById('countPresent').textContent = present;
+        document.getElementById('countAbsent').textContent = absent;
+        document.getElementById('countLate').textContent = late;
+    }
+    document.addEventListener('DOMContentLoaded', updateSummary);
+</script>
+{% endblock %}

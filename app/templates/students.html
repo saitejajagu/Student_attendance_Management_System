@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% block title %}Students{% endblock %}
+{% block page_title %}Students{% endblock %}
+{% block breadcrumb %}Home / Students{% endblock %}
+
+{% block content %}
+<div class="page-toolbar">
+    <form method="GET" class="toolbar-search">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" value="{{ search }}" placeholder="Search students..." class="search-input">
+        </div>
+        <select name="class_name" class="form-select-sm" onchange="this.form.submit()">
+            <option value="">All Classes</option>
+            {% for c in classes %}
+            <option value="{{ c }}" {% if class_filter==c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-filter"></i> Filter</button>
+    </form>
+    <button class="btn btn-primary" onclick="openModal('addStudentModal')">
+        <i class="fas fa-plus"></i> Add Student
+    </button>
+</div>
+
+<div class="data-card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Student ID</th>
+                <th>Full Name</th>
+                <th>Class / Section</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Gender</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if students %}
+            {% for student in students %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><span class="badge badge-neutral">{{ student.student_id }}</span></td>
+                <td>
+                    <div class="name-cell">
+                        <div class="avatar-sm">{{ student.full_name[0] }}</div>
+                        {{ student.full_name }}
+                    </div>
+                </td>
+                <td>{{ student.class_name or '—' }} {% if student.section %}/ {{ student.section }}{% endif %}</td>
+                <td>{{ student.email or '—' }}</td>
+                <td>{{ student.phone or '—' }}</td>
+                <td>{{ student.gender or '—' }}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn-icon btn-edit" onclick="editStudent({{ student.id }})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-delete"
+                            onclick="confirmDelete('{{ url_for('students.delete_student', student_id=student.id) }}', '{{ student.full_name }}')"
+                            title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="8" class="empty-row"><i class="fas fa-inbox"></i> No students found.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="addStudentModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus"></i> Add New Student</h3>
+            <button class="modal-close" onclick="closeModal('addStudentModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="POST" action="{{ url_for('students.add_student') }}">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Student ID *</label>
+                        <input type="text" name="student_id" class="form-control" required placeholder="e.g. STU001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" name="full_name" class="form-control" required placeholder="Full Name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="text" name="phone" class="form-control" placeholder="+91 9999999999">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class</label>
+                        <input type="text" name="class_name" class="form-control" placeholder="e.g. 10th, B.Tech Sem 3">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Section</label>
+                        <input type="text" name="section" class="form-control" placeholder="A / B / C">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-control">
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="date_of_birth" class="form-control">
+                    </div>
+                    <div class="form-group form-group-full">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" class="form-control" rows="2" placeholder="Address"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('addStudentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal-overlay" id="editStudentModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-edit"></i> Edit Student</h3>
+            <button class="modal-close" onclick="closeModal('editStudentModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="POST" id="editStudentForm" action="">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Student ID *</label>
+                        <input type="text" name="student_id" id="edit_student_id" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" name="full_name" id="edit_full_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" id="edit_email" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="text" name="phone" id="edit_phone" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class</label>
+                        <input type="text" name="class_name" id="edit_class_name" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Section</label>
+                        <input type="text" name="section" id="edit_section" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" id="edit_gender" class="form-control">
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="date_of_birth" id="edit_dob" class="form-control">
+                    </div>
+                    <div class="form-group form-group-full">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" id="edit_address" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('editStudentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Student</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+        <div class="modal-header modal-header-danger">
+            <h3><i class="fas fa-trash"></i> Confirm Delete</h3>
+            <button class="modal-close" onclick="closeModal('deleteModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to remove <strong id="deleteItemName"></strong>? This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+            <form id="deleteForm" method="POST" action="" style="display:inline">
+                <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function editStudent(id) {
+        fetch(`/students/get/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('editStudentForm').action = `/students/edit/${id}`;
+                document.getElementById('edit_student_id').value = data.student_id;
+                document.getElementById('edit_full_name').value = data.full_name;
+                document.getElementById('edit_email').value = data.email;
+                document.getElementById('edit_phone').value = data.phone;
+                document.getElementById('edit_class_name').value = data.class_name;
+                document.getElementById('edit_section').value = data.section;
+                document.getElementById('edit_gender').value = data.gender;
+                document.getElementById('edit_dob').value = data.date_of_birth;
+                document.getElementById('edit_address').value = data.address;
+                openModal('editStudentModal');
+            });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — AttendMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #ffffff;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #dash-canvas {
+            z-index: 1;
+        }
+
+        #wave-canvas {
+            z-index: 2;
+        }
+
+        /* ── Card ── */
+        .card-wrap {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            pointer-events: none;
+        }
+
+        .login-card {
+            pointer-events: auto;
+            width: 420px;
+            max-width: 95vw;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 24px;
+            border: 1px solid rgba(233, 30, 140, 0.2);
+            padding: 2.5rem;
+            box-shadow: 0 8px 40px rgba(233, 30, 140, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+            position: relative;
+            animation: cardIn .6s cubic-bezier(.23, 1, .32, 1) both;
+        }
+
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .card-stripe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #e91e8c, #ff4db8, transparent);
+            border-radius: 24px 24px 0 0;
+            animation: stripe 3s ease-in-out infinite;
+        }
+
+        @keyframes stripe {
+
+            0%,
+            100% {
+                opacity: .3
+            }
+
+            50% {
+                opacity: 1
+            }
+        }
+
+        /* Logo */
+        .logo-box {
+            width: 70px;
+            height: 70px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #e91e8c, #ff4db8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #fff;
+            margin: 0 auto 1rem;
+            box-shadow: 0 0 30px rgba(233, 30, 140, .35);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(233, 30, 140, .35)
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(233, 30, 140, .6)
+            }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-title {
+            font-size: 1.75rem;
+            font-weight: 900;
+            letter-spacing: -.5px;
+            background: linear-gradient(135deg, #1a1a2e 30%, #e91e8c);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-sub {
+            color: #888;
+            font-size: .85rem;
+            margin-top: .25rem;
+        }
+
+        /* Alerts */
+        .flash-msg {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .7rem 1rem;
+            border-radius: 10px;
+            font-size: .85rem;
+            margin-bottom: 1rem;
+        }
+
+        .flash-danger {
+            background: rgba(233, 30, 140, .07);
+            color: #c2185b;
+            border: 1px solid rgba(233, 30, 140, .2);
+        }
+
+        .flash-success {
+            background: rgba(0, 180, 100, .07);
+            color: #00875a;
+            border: 1px solid rgba(0, 180, 100, .2);
+        }
+
+        .flash-info {
+            background: rgba(66, 133, 244, .07);
+            color: #1a56db;
+            border: 1px solid rgba(66, 133, 244, .2);
+        }
+
+        /* Form */
+        .f-label {
+            display: block;
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            color: #555;
+            margin-bottom: .35rem;
+        }
+
+        .f-group {
+            margin-bottom: 1rem;
+        }
+
+        .f-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .f-icon {
+            position: absolute;
+            left: .85rem;
+            color: #e91e8c;
+            font-size: .82rem;
+            z-index: 1;
+        }
+
+        .f-input {
+            width: 100%;
+            padding: .65rem .9rem .65rem 2.4rem;
+            background: rgba(255, 255, 255, .9);
+            border: 1.5px solid rgba(233, 30, 140, .2);
+            border-radius: 10px;
+            color: #1a1a2e;
+            font-size: .875rem;
+            font-family: inherit;
+            transition: all .2s;
+        }
+
+        .f-input::placeholder {
+            color: #bbb;
+        }
+
+        .f-input:focus {
+            outline: none;
+            border-color: #e91e8c;
+            box-shadow: 0 0 0 3px rgba(233, 30, 140, .1);
+        }
+
+        .pwd-toggle {
+            position: absolute;
+            right: .75rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #bbb;
+            transition: color .2s;
+            font-size: .9rem;
+        }
+
+        .pwd-toggle:hover {
+            color: #e91e8c;
+        }
+
+        .row-mid {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.2rem;
+        }
+
+        .chk-label {
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            font-size: .85rem;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .chk-label input {
+            accent-color: #e91e8c;
+            width: 15px;
+            height: 15px;
+        }
+
+        .forgot-lnk {
+            font-size: .82rem;
+            color: #e91e8c;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .forgot-lnk:hover {
+            color: #c2185b;
+            text-decoration: underline;
+        }
+
+        .btn-sign {
+            width: 100%;
+            padding: .9rem;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #e91e8c, #ff4db8);
+            color: #fff;
+            font-size: .95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            box-shadow: 0 4px 20px rgba(233, 30, 140, .3);
+            transition: all .2s;
+        }
+
+        .btn-sign:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(233, 30, 140, .4);
+        }
+
+        .btn-sign:active {
+            transform: scale(.98);
+        }
+
+        .chips {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 1.2rem;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            font-size: .67rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(233, 30, 140, .07);
+            border: 1px solid rgba(233, 30, 140, .15);
+            color: #e91e8c;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="dash-canvas"></canvas>
+    <canvas id="wave-canvas"></canvas>
+
+    <div class="card-wrap">
+        <div class="login-card">
+            <div class="card-stripe"></div>
+
+            <div class="login-header">
+                <div class="logo-box"><i class="fas fa-brain"></i></div>
+                <h1 class="login-title">AttendMS</h1>
+                <p class="login-sub">AI-Powered Attendance Management</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for cat, msg in messages %}
+            <div class="flash-msg flash-{{ cat }}">
+                <i
+                    class="fas fa-{% if cat == 'success' %}check-circle{% elif cat == 'danger' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                {{ msg }}
+            </div>
+            {% endfor %}{% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <div class="f-group">
+                    <label class="f-label">Username</label>
+                    <div class="f-wrap">
+                        <i class="fas fa-user f-icon"></i>
+                        <input class="f-input" type="text" name="username" placeholder="Enter your username" required
+                            autocomplete="username">
+                    </div>
+                </div>
+                <div class="f-group">
+                    <label class="f-label">Password</label>
+                    <div class="f-wrap">
+                        <i class="fas fa-lock f-icon"></i>
+                        <input class="f-input" type="password" name="password" id="pwd"
+                            placeholder="Enter your password" required autocomplete="current-password">
+                        <button type="button" class="pwd-toggle" onclick="togglePwd()">
+                            <i class="fas fa-eye" id="pwdIco"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="row-mid">
+                    <label class="chk-label">
+                        <input type="checkbox" name="remember"> Remember me
+                    </label>
+                    <a href="{{ url_for('auth.forgot_password') }}" class="forgot-lnk">
+                        <i class="fas fa-key"></i> Forgot password?
+                    </a>
+                </div>
+                <button type="submit" class="btn-sign" id="signBtn">
+                    <i class="fas fa-sign-in-alt"></i> Sign In <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="chips">
+                <span class="chip"><i class="fas fa-shield-alt"></i> Secure</span>
+                <span class="chip"><i class="fas fa-brain"></i> AI Powered</span>
+                <span class="chip"><i class="fas fa-lock"></i> Encrypted</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ══════════════════════════════════════════
+           CANVAS SETUP
+        ══════════════════════════════════════════ */
+        const dc = document.getElementById('dash-canvas');
+        const dctx = dc.getContext('2d');
+        const wc = document.getElementById('wave-canvas');
+        const wctx = wc.getContext('2d');
+
+        let W = 0, H = 0;
+
+        function resize() {
+            W = dc.width = wc.width = window.innerWidth;
+            H = dc.height = wc.height = window.innerHeight;
+        }
+        window.addEventListener('resize', function () { resize(); spawnDashes(); });
+        resize();
+
+        /* ══════════════════════════════════════════
+           SMOOTH MOUSE
+        ══════════════════════════════════════════ */
+        const mouse = { x: -9999, y: -9999, rx: -9999, ry: -9999 };
+        window.addEventListener('mousemove', function (e) {
+            mouse.rx = e.clientX;
+            mouse.ry = e.clientY;
+        });
+
+        /* ══════════════════════════════════════════
+           RAINBOW COLOUR  (clamped — no crash on y < 0)
+        ══════════════════════════════════════════ */
+        // blue → indigo → purple → pink → red → orange
+        var PALETTE = [
+            [66, 133, 244],
+            [103, 78, 244],
+            [156, 39, 176],
+            [233, 30, 140],
+            [229, 57, 53],
+            [255, 111, 10]
+        ];
+        function rainbow(yFrac) {
+            var t = Math.max(0, Math.min(1, yFrac)) * (PALETTE.length - 1);
+            var lo = Math.floor(t);
+            var hi = Math.min(lo + 1, PALETTE.length - 1);
+            var f = t - lo;
+            var r = PALETTE[lo][0] + (PALETTE[hi][0] - PALETTE[lo][0]) * f;
+            var g = PALETTE[lo][1] + (PALETTE[hi][1] - PALETTE[lo][1]) * f;
+            var b = PALETTE[lo][2] + (PALETTE[hi][2] - PALETTE[lo][2]) * f;
+            return [r | 0, g | 0, b | 0];
+        }
+
+        /* ══════════════════════════════════════════
+           FLOATING DASHES
+        ══════════════════════════════════════════ */
+        var dashes = [];
+
+        function makeDash(spreadY) {
+            return {
+                x: Math.random() * W,
+                y: spreadY !== undefined ? spreadY : H + Math.random() * 100,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: -(Math.random() * 0.55 + 0.2),
+                w: Math.random() * 20 + 9,
+                h: Math.random() * 3 + 2,
+                angle: Math.random() * Math.PI,
+                spin: (Math.random() - 0.5) * 0.016,
+                alpha: Math.random() * 0.5 + 0.3
+            };
+        }
+
+        function spawnDashes() {
+            var count = Math.min(Math.floor((W * H) / 8000), 150);
+            dashes = [];
+            for (var i = 0; i < count; i++) {
+                dashes.push(makeDash(Math.random() * H)); // spread on load
+            }
+        }
+        spawnDashes();
+
+        function updateDash(d) {
+            d.x += d.vx;
+            d.y += d.vy;
+            d.angle += d.spin;
+
+            // Mouse repulsion
+            var dx = d.x - mouse.x;
+            var dy = d.y - mouse.y;
+            var dist2 = dx * dx + dy * dy;
+            if (dist2 < 16000) { // ~126px radius
+                var dist = Math.sqrt(dist2);
+                var force = (126 - dist) / 126 * 2.2;
+                d.x += (dx / dist) * force;
+                d.y += (dy / dist) * force;
+            }
+
+            // Respawn at bottom when off top
+            if (d.y < -30) { d.x = Math.random() * W; d.y = H + 20; }
+            if (d.x < -40) d.x = W + 40;
+            if (d.x > W + 40) d.x = -40;
+        }
+
+        function drawDash(d) {
+            var col = rainbow(d.y / H);
+            dctx.save();
+            dctx.translate(d.x, d.y);
+            dctx.rotate(d.angle);
+            dctx.beginPath();
+            var rx = d.w / 2, ry = d.h / 2;
+            dctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+            dctx.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + d.alpha + ')';
+            dctx.fill();
+            dctx.restore();
+        }
+
+        /* ══════════════════════════════════════════
+           WAVE SYSTEM  (mouse-reactive)
+        ══════════════════════════════════════════ */
+        var WAVES = [
+            { r: 233, g: 30, b: 140, a: 0.13, spd: 0.012, amp: 52, frq: 0.009, yo: 0.76 },
+            { r: 191, g: 80, b: 255, a: 0.09, spd: 0.019, amp: 36, frq: 0.014, yo: 0.81 },
+            { r: 255, g: 80, b: 200, a: 0.11, spd: 0.008, amp: 60, frq: 0.007, yo: 0.85 },
+            { r: 66, g: 133, b: 244, a: 0.07, spd: 0.023, amp: 26, frq: 0.019, yo: 0.71 }
+        ];
+        var tick = 0;
+
+        function drawWaves() {
+            wctx.clearRect(0, 0, W, H);
+
+            // Normalise mouse position -1..1  (default centre when off-screen)
+            var mx = mouse.x < 0 ? 0 : (mouse.x / W) * 2 - 1;
+            var my = mouse.y < 0 ? 0 : (mouse.y / H) * 2 - 1;
+
+            for (var i = 0; i < WAVES.length; i++) {
+                var w = WAVES[i];
+                var by = H * w.yo;
+                var amp = w.amp * (1 + my * 0.55);
+                var frq = w.frq * (1 + mx * 0.32);
+                var ph = mx * 1.7;
+
+                // --- filled area ---
+                wctx.beginPath();
+                wctx.moveTo(0, H);
+                for (var x = 0; x <= W; x += 2) {
+                    var t = tick * w.spd + x * frq + ph;
+                    var md = Math.abs(x - mouse.x) / W;
+                    var rip = mouse.x > 0
+                        ? (1 - md) * 15 * Math.sin((x - mouse.x) * 0.04 + tick * 0.06)
+                        : 0;
+                    var y = by + Math.sin(t) * amp + Math.sin(t * 1.6 + i) * amp * 0.28 + rip;
+                    wctx.lineTo(x, y);
+                }
+                wctx.lineTo(W, H);
+                wctx.closePath();
+
+                var grad = wctx.createLinearGradient(0, by - amp, 0, H);
+                grad.addColorStop(0, 'rgba(' + w.r + ',' + w.g + ',' + w.b + ',' + w.a + ')');
+                grad.addColorStop(1, 'rgba(' + w.r + ',' + w.g + ',' + w.b + ',0)');
+                wctx.fillStyle = grad;
+                wctx.fill();
+
+                // --- glowing edge ---
+                wctx.beginPath();
+                for (var x = 0; x <= W; x += 2) {
+                    var t = tick * w.spd + x * frq + ph;
+                    var md = Math.abs(x - mouse.x) / W;
+                    var rip = mouse.x > 0
+                        ? (1 - md) * 15 * Math.sin((x - mouse.x) * 0.04 + tick * 0.06)
+                        : 0;
+                    var y = by + Math.sin(t) * amp + Math.sin(t * 1.6 + i) * amp * 0.28 + rip;
+                    if (x === 0) wctx.moveTo(x, y); else wctx.lineTo(x, y);
+                }
+                var ea = Math.min(w.a * 3.5, 0.7);
+                wctx.strokeStyle = 'rgba(' + w.r + ',' + w.g + ',' + w.b + ',' + ea + ')';
+                wctx.lineWidth = 1.5;
+                wctx.stroke();
+            }
+        }
+
+        /* ══════════════════════════════════════════
+           MAIN ANIMATION LOOP
+        ══════════════════════════════════════════ */
+        function loop() {
+            // Smooth lerp mouse
+            mouse.x += (mouse.rx - mouse.x) * 0.08;
+            mouse.y += (mouse.ry - mouse.y) * 0.08;
+
+            tick++;
+
+            // Draw dashes
+            dctx.clearRect(0, 0, W, H);
+            for (var i = 0; i < dashes.length; i++) {
+                updateDash(dashes[i]);
+                drawDash(dashes[i]);
+            }
+
+            // Draw waves
+            drawWaves();
+
+            requestAnimationFrame(loop);
+        }
+
+        loop(); // START
+
+        /* ══════════════════════════════════════════
+           HELPERS
+        ══════════════════════════════════════════ */
+        function togglePwd() {
+            var p = document.getElementById('pwd');
+            var i = document.getElementById('pwdIco');
+            p.type = p.type === 'password' ? 'text' : 'password';
+            i.className = p.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+        }
+        document.getElementById('signBtn').addEventListener('click', function () {
+            this.style.transform = 'scale(0.97)';
+            setTimeout(function () { document.getElementById('signBtn').style.transform = ''; }, 150);
+        });
+    </script>
+</body>
+
+</html>

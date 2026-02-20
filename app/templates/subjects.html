@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Subjects{% endblock %}
+{% block page_title %}Subjects{% endblock %}
+{% block breadcrumb %}Home / Subjects{% endblock %}
+
+{% block content %}
+<div class="page-toolbar">
+    <form method="GET" class="toolbar-search">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" value="{{ search }}" placeholder="Search subjects..." class="search-input">
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-filter"></i> Search</button>
+    </form>
+    <button class="btn btn-primary" onclick="openModal('addSubjectModal')">
+        <i class="fas fa-plus"></i> Add Subject
+    </button>
+</div>
+
+<div class="data-card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Code</th>
+                <th>Subject Name</th>
+                <th>Teacher</th>
+                <th>Class</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if subjects %}
+            {% for subject in subjects %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><span class="badge badge-purple">{{ subject.code }}</span></td>
+                <td>
+                    <div class="name-cell">
+                        <div class="avatar-sm avatar-purple">{{ subject.name[0] }}</div>
+                        {{ subject.name }}
+                    </div>
+                </td>
+                <td>{{ subject.teacher_name or '—' }}</td>
+                <td>{{ subject.class_name or '—' }}</td>
+                <td class="text-muted">{{ (subject.description[:50] + '…') if subject.description and
+                    subject.description|length > 50 else (subject.description or '—') }}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn-icon btn-edit" onclick="editSubject({{ subject.id }})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon btn-delete"
+                            onclick="confirmDelete('{{ url_for('subjects.delete_subject', subject_id=subject.id) }}', '{{ subject.name }}')"
+                            title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="7" class="empty-row"><i class="fas fa-inbox"></i> No subjects found.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Subject Modal -->
+<div class="modal-overlay" id="addSubjectModal">
+    <div class="modal modal-md">
+        <div class="modal-header">
+            <h3><i class="fas fa-book-medical"></i> Add New Subject</h3>
+            <button class="modal-close" onclick="closeModal('addSubjectModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="POST" action="{{ url_for('subjects.add_subject') }}">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Subject Name *</label>
+                        <input type="text" name="name" class="form-control" required placeholder="e.g. Mathematics">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subject Code *</label>
+                        <input type="text" name="code" class="form-control" required placeholder="e.g. MATH101">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teacher Name</label>
+                        <input type="text" name="teacher_name" class="form-control" placeholder="Teacher's full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class</label>
+                        <input type="text" name="class_name" class="form-control" placeholder="e.g. 10th, B.Tech Sem 3">
+                    </div>
+                    <div class="form-group form-group-full">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="2"
+                            placeholder="Subject description (optional)"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('addSubjectModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Subject</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Subject Modal -->
+<div class="modal-overlay" id="editSubjectModal">
+    <div class="modal modal-md">
+        <div class="modal-header">
+            <h3><i class="fas fa-book-open"></i> Edit Subject</h3>
+            <button class="modal-close" onclick="closeModal('editSubjectModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="POST" id="editSubjectForm" action="">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Subject Name *</label>
+                        <input type="text" name="name" id="edit_name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subject Code *</label>
+                        <input type="text" name="code" id="edit_code" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teacher Name</label>
+                        <input type="text" name="teacher_name" id="edit_teacher_name" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Class</label>
+                        <input type="text" name="class_name" id="edit_sub_class_name" class="form-control">
+                    </div>
+                    <div class="form-group form-group-full">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" id="edit_description" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('editSubjectModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Subject</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal modal-sm">
+        <div class="modal-header modal-header-danger">
+            <h3><i class="fas fa-trash"></i> Confirm Delete</h3>
+            <button class="modal-close" onclick="closeModal('deleteModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to remove <strong id="deleteItemName"></strong>?</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+            <form id="deleteForm" method="POST" action="" style="display:inline">
+                <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function editSubject(id) {
+        fetch(`/subjects/get/${id}`)
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('editSubjectForm').action = `/subjects/edit/${id}`;
+                document.getElementById('edit_name').value = data.name;
+                document.getElementById('edit_code').value = data.code;
+                document.getElementById('edit_teacher_name').value = data.teacher_name;
+                document.getElementById('edit_sub_class_name').value = data.class_name;
+                document.getElementById('edit_description').value = data.description;
+                openModal('editSubjectModal');
+            });
+    }
+</script>
+{% endblock %}

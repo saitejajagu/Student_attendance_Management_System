@@ -1,0 +1,106 @@
+{% extends 'base_student.html' %}
+{% block title %}My Attendance{% endblock %}
+{% block page_title %}My Attendance{% endblock %}
+{% block breadcrumb %}Student Portal / My Attendance{% endblock %}
+
+{% block content %}
+<div class="page-header-bar"
+    style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:20px;">
+    <div>
+        <p style="color:#a0aec0; margin:0; font-size:0.9rem;">Showing attendance records for <strong
+                style="color:#e2e8f0;">{{ student.full_name }}</strong></p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-body" style="padding:20px;">
+        <form method="GET" action="{{ url_for('student_portal.my_attendance') }}"
+            style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+            <div style="flex:1; min-width:160px;">
+                <label
+                    style="display:block; font-size:0.8rem; color:#a0aec0; margin-bottom:6px; font-weight:600;">Subject</label>
+                <select name="subject_id" class="form-control" style="width:100%;">
+                    <option value="">All Subjects</option>
+                    {% for s in subjects %}
+                    <option value="{{ s.id }}" {% if subject_filter==s.id|string %}selected{% endif %}>{{ s.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex:1; min-width:140px;">
+                <label
+                    style="display:block; font-size:0.8rem; color:#a0aec0; margin-bottom:6px; font-weight:600;">Status</label>
+                <select name="status" class="form-control" style="width:100%;">
+                    <option value="">All Status</option>
+                    {% for st in ['Present','Absent','Late','Excused'] %}
+                    <option value="{{ st }}" {% if status_filter==st %}selected{% endif %}>{{ st }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex:1; min-width:140px;">
+                <label style="display:block; font-size:0.8rem; color:#a0aec0; margin-bottom:6px; font-weight:600;">From
+                    Date</label>
+                <input type="date" name="from_date" value="{{ from_date }}" class="form-control" style="width:100%;">
+            </div>
+            <div style="flex:1; min-width:140px;">
+                <label style="display:block; font-size:0.8rem; color:#a0aec0; margin-bottom:6px; font-weight:600;">To
+                    Date</label>
+                <input type="date" name="to_date" value="{{ to_date }}" class="form-control" style="width:100%;">
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+                <a href="{{ url_for('student_portal.my_attendance') }}" class="btn btn-secondary"
+                    style="margin-left:6px;"><i class="fas fa-times"></i> Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Attendance Table -->
+<div class="table-card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-calendar-check"></i> Attendance Records
+            <span style="font-size:0.8rem; font-weight:400; color:#a0aec0; margin-left:8px;">({{ records|length }}
+                records)</span>
+        </h3>
+    </div>
+    {% if records %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Subject</th>
+                    <th>Subject Code</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att, sub in records %}
+                <tr>
+                    <td style="color:#718096;">{{ loop.index }}</td>
+                    <td><strong>{{ att.date.strftime('%d %b %Y') }}</strong><br><small style="color:#a0aec0;">{{
+                            att.date.strftime('%A') }}</small></td>
+                    <td>{{ sub.name }}</td>
+                    <td><code
+                            style="background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:4px; font-size:0.8rem;">{{ sub.code }}</code>
+                    </td>
+                    <td><span class="badge badge-{{ att.status.lower() }}">{{ att.status }}</span></td>
+                    <td style="color:#a0aec0;">{{ att.remarks or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-calendar-times"></i></div>
+        <h3>No records found</h3>
+        <p>No attendance records match your filters.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AttendMS{% endblock %} — Attendance Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="logo-text">
+                        <span class="logo-name">AttendMS</span>
+                        <span class="logo-sub">Management System</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">MAIN MENU</div>
+                <a href="{{ url_for('attendance.dashboard') }}"
+                    class="nav-item {% if request.endpoint == 'attendance.dashboard' %}active{% endif %}">
+                    <i class="fas fa-chart-pie nav-icon"></i>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="{{ url_for('students.list_students') }}"
+                    class="nav-item {% if request.blueprint == 'students' %}active{% endif %}">
+                    <i class="fas fa-user-graduate nav-icon"></i>
+                    <span class="nav-label">Students</span>
+                </a>
+                <a href="{{ url_for('subjects.list_subjects') }}"
+                    class="nav-item {% if request.blueprint == 'subjects' %}active{% endif %}">
+                    <i class="fas fa-book nav-icon"></i>
+                    <span class="nav-label">Subjects</span>
+                </a>
+                <div class="nav-divider"></div>
+                <div class="nav-section-label">ATTENDANCE</div>
+                <a href="{{ url_for('attendance.mark_attendance') }}"
+                    class="nav-item {% if request.endpoint == 'attendance.mark_attendance' %}active{% endif %}">
+                    <i class="fas fa-clipboard-check nav-icon"></i>
+                    <span class="nav-label">Mark Attendance</span>
+                </a>
+                <a href="{{ url_for('reports.view_reports') }}"
+                    class="nav-item {% if request.blueprint == 'reports' %}active{% endif %}">
+                    <i class="fas fa-chart-bar nav-icon"></i>
+                    <span class="nav-label">Reports</span>
+                </a>
+                {% if current_user.role == 'admin' %}
+                <div class="nav-divider"></div>
+                <div class="nav-section-label">ADMINISTRATION</div>
+                <a href="{{ url_for('admin.list_users') }}"
+                    class="nav-item {% if request.blueprint == 'admin' and request.endpoint == 'admin.list_users' %}active{% endif %}">
+                    <i class="fas fa-users-cog nav-icon"></i>
+                    <span class="nav-label">Users</span>
+                </a>
+                <a href="{{ url_for('admin.leave_requests') }}"
+                    class="nav-item {% if request.endpoint == 'admin.leave_requests' %}active{% endif %}">
+                    <i class="fas fa-calendar-minus nav-icon"></i>
+                    <span class="nav-label">Leave Requests</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">{{ current_user.full_name[0].upper() if current_user.full_name else
+                        current_user.username[0].upper() }}</div>
+                    <div class="user-details">
+                        <span class="user-name">{{ current_user.full_name or current_user.username }}</span>
+                        <span class="user-role">{{ current_user.role.title() }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
+                    <div class="page-info">
+                        <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                        <span class="page-breadcrumb">{% block breadcrumb %}Home{% endblock %}</span>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-date"><i class="fas fa-calendar-alt"></i> <span id="currentDate"></span></div>
+                </div>
+            </header>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">
+                    <i
+                        class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                    {{ message }}
+                    <button class="alert-close" onclick="this.parentElement.remove()"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <!-- Page Content -->
+            <div class="content-wrapper">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

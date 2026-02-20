@@ -1,0 +1,108 @@
+{% extends 'base_student.html' %}
+{% block title %}Leave Requests{% endblock %}
+{% block page_title %}Leave Requests{% endblock %}
+{% block breadcrumb %}Student Portal / Leave Requests{% endblock %}
+
+{% block content %}
+<div style="display:grid; gap:24px; grid-template-columns:1fr 1fr;">
+
+    <!-- Submit Leave Request Form -->
+    <div class="table-card" style="height:fit-content;">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-paper-plane"></i> Submit Leave Request</h3>
+        </div>
+        <div style="padding:24px;">
+            <form method="POST" action="{{ url_for('student_portal.submit_leave') }}" id="leaveForm">
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="form-label">From Date <span style="color:#fc8181;">*</span></label>
+                    <input type="date" name="from_date" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label class="form-label">To Date <span style="color:#fc8181;">*</span></label>
+                    <input type="date" name="to_date" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label class="form-label">Reason <span style="color:#fc8181;">*</span></label>
+                    <textarea name="reason" class="form-control" rows="4"
+                        placeholder="Explain the reason for your leave..." required style="resize:vertical;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">
+                    <i class="fas fa-paper-plane"></i> Submit Request
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leave Request History -->
+    <div class="table-card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-history"></i> My Requests <span
+                    style="font-size:0.8rem; font-weight:400; color:#a0aec0;">({{ leaves|length }})</span></h3>
+        </div>
+        {% if leaves %}
+        <div style="padding:8px 0;">
+            {% for leave in leaves %}
+            <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06);">
+                <div
+                    style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap;">
+                    <div>
+                        <div style="display:flex; gap:8px; align-items:center; margin-bottom:4px;">
+                            <i class="fas fa-calendar-minus" style="color:#a0aec0; font-size:0.85rem;"></i>
+                            <span style="font-weight:600; color:#e2e8f0; font-size:0.9rem;">
+                                {{ leave.from_date.strftime('%d %b %Y') }}
+                                {% if leave.from_date != leave.to_date %}
+                                → {{ leave.to_date.strftime('%d %b %Y') }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        <p style="color:#a0aec0; font-size:0.82rem; margin:0 0 4px; max-width:340px;">{{ leave.reason }}
+                        </p>
+                        <span style="font-size:0.75rem; color:#718096;">Submitted {{ leave.created_at.strftime('%d %b
+                            %Y, %I:%M %p') }}</span>
+                        {% if leave.admin_note %}
+                        <div
+                            style="margin-top:8px; padding:8px 12px; background:rgba(255,255,255,0.04); border-radius:8px; border-left:3px solid {% if leave.status == 'Approved' %}#63cab7{% else %}#fc8181{% endif %};">
+                            <span style="font-size:0.78rem; color:#a0aec0;"><i class="fas fa-comment"></i> Admin note:
+                                {{ leave.admin_note }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <span class="badge badge-{{ leave.status.lower() }}" style="white-space:nowrap; flex-shrink:0;">
+                        {% if leave.status == 'Pending' %}<i class="fas fa-clock"></i>{% elif leave.status == 'Approved'
+                        %}<i class="fas fa-check"></i>{% else %}<i class="fas fa-times"></i>{% endif %}
+                        {{ leave.status }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-paper-plane"></i></div>
+            <h3>No leave requests yet</h3>
+            <p>Submit your first leave request using the form.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .badge-pending {
+        background: rgba(246, 173, 85, 0.15);
+        color: #f6ad55;
+        border: 1px solid rgba(246, 173, 85, 0.3);
+    }
+
+    .badge-approved {
+        background: rgba(99, 202, 183, 0.15);
+        color: #63cab7;
+        border: 1px solid rgba(99, 202, 183, 0.3);
+    }
+
+    .badge-rejected {
+        background: rgba(252, 129, 129, 0.15);
+        color: #fc8181;
+        border: 1px solid rgba(252, 129, 129, 0.3);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Leave Requests{% endblock %}
+{% block page_title %}Leave Requests{% endblock %}
+{% block breadcrumb %}Admin / Leave Requests{% endblock %}
+
+{% block content %}
+<!-- Status Filter -->
+<div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+    {% for label, val in [('All', ''), ('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')] %}
+    <a href="{{ url_for('admin.leave_requests') }}{% if val %}?status={{ val }}{% endif %}"
+        style="padding:6px 16px; border-radius:999px; font-size:0.82rem; font-weight:600; text-decoration:none; transition:all .2s;
+              {% if status_filter == val %}background:linear-gradient(135deg,#e91e8c,#ff4db8); color:#fff;{% else %}background:rgba(0,0,0,0.05); color:#7777aa;{% endif %}">
+        {{ label }}
+    </a>
+    {% endfor %}
+</div>
+
+<div class="table-card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-calendar-minus"></i> Leave Requests
+            <span style="font-size:0.8rem; font-weight:400; color:#7777aa; margin-left:6px;">({{ requests_list|length
+                }})</span>
+        </h3>
+    </div>
+    {% if requests_list %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Class</th>
+                    <th>Dates</th>
+                    <th>Reason</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leave, student in requests_list %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div
+                                style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:0.85rem; flex-shrink:0;">
+                                {{ student.full_name[0] }}
+                            </div>
+                            <div>
+                                <div style="font-weight:600; color:#1a1a2e; font-size:0.9rem;">{{ student.full_name }}
+                                </div>
+                                <div style="font-size:0.75rem; color:#7777aa;">{{ student.student_id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="color:#7777aa; font-size:0.85rem;">{{ student.class_name or '—' }}{% if student.section
+                        %} / {{ student.section }}{% endif %}</td>
+                    <td>
+                        <span style="font-weight:600; color:#1a1a2e; font-size:0.85rem;">{{ leave.from_date.strftime('%d
+                            %b %Y') }}</span>
+                        {% if leave.from_date != leave.to_date %}
+                        <br><span style="color:#7777aa; font-size:0.78rem;">to {{ leave.to_date.strftime('%d %b %Y')
+                            }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="color:#7777aa; max-width:220px; font-size:0.83rem;">{{ leave.reason }}</td>
+                    <td style="color:#7777aa; font-size:0.8rem;">{{ leave.created_at.strftime('%d %b %Y') }}</td>
+                    <td>
+                        <span style="padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:600;
+                            {% if leave.status == 'Pending' %}background:rgba(246,173,85,0.15); color:#f6ad55; border:1px solid rgba(246,173,85,0.3);
+                            {% elif leave.status == 'Approved' %}background:rgba(99,202,183,0.15); color:#63cab7; border:1px solid rgba(99,202,183,0.3);
+                            {% else %}background:rgba(252,129,129,0.15); color:#fc8181; border:1px solid rgba(252,129,129,0.3);{% endif %}
+                        ">{{ leave.status }}</span>
+                        {% if leave.admin_note %}
+                        <div style="font-size:0.72rem; color:#7777aa; margin-top:3px; max-width:150px;">Note: {{
+                            leave.admin_note }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if leave.status == 'Pending' %}
+                        <button class="btn btn-sm btn-primary"
+                            onclick="openReviewModal({{ leave.id }}, '{{ student.full_name }}')"
+                            style="padding:4px 10px; font-size:0.78rem;">
+                            <i class="fas fa-gavel"></i> Review
+                        </button>
+                        {% else %}
+                        <span style="font-size:0.78rem; color:#7777aa;">Reviewed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-calendar-check"></i></div>
+        <h3>No leave requests</h3>
+        <p>No leave requests found for this filter.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Review Modal -->
+<div id="reviewModal"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; padding:16px; backdrop-filter: blur(4px);">
+    <div
+        style="background:#ffffff; border-radius:16px; padding:28px; width:100%; max-width:440px; border:1px solid rgba(233,30,140,0.15); box-shadow:0 15px 50px rgba(0,0,0,0.15);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="margin:0; font-size:1.05rem; color:#1a1a2e;"><i class="fas fa-gavel"
+                    style="color:#e91e8c; margin-right:8px;"></i>Review Leave Request</h3>
+            <button onclick="document.getElementById('reviewModal').style.display='none'"
+                style="background:none; border:none; color:#7777aa; cursor:pointer; font-size:1.1rem;"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        <p id="reviewStudentName" style="color:#7777aa; margin-bottom:16px; font-size:0.9rem;"></p>
+        <form method="POST" id="reviewForm" action="">
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label">Admin Note <span
+                        style="color:#718096; font-size:0.75rem;">(optional)</span></label>
+                <textarea name="admin_note" class="form-control" rows="3"
+                    placeholder="Optional note for the student..."></textarea>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary"
+                    onclick="document.getElementById('reviewModal').style.display='none'">Cancel</button>
+                <button type="submit" name="action" value="Rejected" class="btn"
+                    style="background:rgba(252,129,129,0.15); color:#fc8181; border:1px solid rgba(252,129,129,0.3);">
+                    <i class="fas fa-times"></i> Reject
+                </button>
+                <button type="submit" name="action" value="Approved" class="btn btn-primary">
+                    <i class="fas fa-check"></i> Approve
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openReviewModal(leaveId, studentName) {
+        document.getElementById('reviewStudentName').textContent = 'Student: ' + studentName;
+        document.getElementById('reviewForm').action = '/admin/leave/review/' + leaveId;
+        document.getElementById('reviewModal').style.display = 'flex';
+    }
+    document.getElementById('reviewModal').addEventListener('click', function (e) {
+        if (e.target === this) this.style.display = 'none';
+    });
+</script>
+{% endblock %}
