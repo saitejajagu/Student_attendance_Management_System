@@ -24,20 +24,17 @@
 #     'default': DevelopmentConfig
 # }
 
-
 import os
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'change-this-in-production')
 
+    # Use cloud database if available
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL'
-    ) or os.environ.get(
-        'MYSQL_URL'
-    ) or 'sqlite:///local.db'
+    ) or 'sqlite:///local.db'  # fallback for local development
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 3600,
