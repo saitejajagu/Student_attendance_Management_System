@@ -59,19 +59,51 @@ function confirmDelete(url, name) {
 
 // ---- SIDEBAR SLIDE TOGGLE ----
 (function () {
-    var toggle = document.getElementById('mobileToggle');
-    var sidebar = document.getElementById('sidebar');
-    var main = document.getElementById('mainContent');
-    if (toggle && sidebar) {
-        toggle.addEventListener('click', function () {
-            sidebar.classList.toggle('mobile-open');
-        });
-        // Close when clicking outside sidebar on mobile
-        if (main) {
-            main.addEventListener('click', function () {
-                sidebar.classList.remove('mobile-open');
-            });
+    const toggle = document.getElementById('mobileToggle');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    function toggleSidebar(e) {
+        if (e) e.stopPropagation();
+        if (sidebar) {
+            if (window.innerWidth > 991) {
+                sidebar.classList.toggle('collapsed');
+            } else {
+                sidebar.classList.toggle('mobile-open');
+                // Ensure desktop 'collapsed' is removed on mobile if we want it open
+                sidebar.classList.remove('collapsed');
+            }
         }
+    }
+
+    if (toggle) {
+        toggle.addEventListener('click', toggleSidebar);
+    }
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', toggleSidebar);
+    }
+
+    // Close when clicking outside sidebar on mobile
+    document.addEventListener('click', function (e) {
+        if (sidebar && sidebar.classList.contains('mobile-open')) {
+            const isClickInsideSidebar = sidebar.contains(e.target);
+            const isClickOnToggle = (toggle && toggle.contains(e.target)) ||
+                (sidebarToggle && sidebarToggle.contains(e.target));
+
+            if (!isClickInsideSidebar && !isClickOnToggle) {
+                sidebar.classList.remove('mobile-open');
+            }
+        }
+    });
+
+    // Prevent sidebar from closing when clicking inside it on mobile
+    if (sidebar) {
+        sidebar.addEventListener('click', function (e) {
+            if (window.innerWidth <= 991) {
+                e.stopPropagation();
+            }
+        });
     }
 })();
 

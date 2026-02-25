@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from app.models import User
+from app.models import User, Student
 from app import db
 
 auth = Blueprint('auth', __name__)
@@ -64,6 +64,66 @@ def forgot_password():
             flash('No active account found with that username or email.', 'danger')
 
     return render_template('forgot_password.html', reset_link=reset_link)
+
+
+@auth.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('attendance.dashboard'))
+
+    if request.method == 'POST':
+        full_name = request.form.get('full_name', '').strip()
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        role = request.form.get('role', 'student')
+        student_id_val = request.form.get('student_id', '').strip()
+
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists. Please choose another.', 'danger')
+        elif email and User.query.filter_by(email=email).first():
+            flash('Email already registered. Please login.', 'warning')
+        else:
+            try:
+                # Create user account
+                new_user = User(
+                    username=username,
+                    email=email if email else None,
+                    role=role,
+                    full_name=full_name,
+                    is_active_user=True
+                )
+                new_user.set_password(password)
+                db.session.add(new_user)
+                db.session.flush()  # To get new_user.id
+
+                # If student, also create student record
+                if role == 'student':
+                    if not student_id_val:
+                        flash('Student ID is required for student registration.', 'danger')
+                        return render_template('register.html')
+                    
+                    if Student.query.filter_by(student_id=student_id_val).first():
+                        flash('Student ID already exists.', 'danger')
+                        db.session.rollback()
+                        return render_template('register.html')
+                    
+                    new_student = Student(
+                        student_id=student_id_val,
+                        full_name=full_name,
+                        email=email if email else None,
+                        user_id=new_user.id
+                    )
+                    db.session.add(new_student)
+
+                db.session.commit()
+                flash('Registration successful! You can now login.', 'success')
+                return redirect(url_for('auth.login'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'An error occurred: {str(e)}', 'danger')
+
+    return render_template('register.html')
 
 
 @auth.route('/reset-password/<token>', methods=['GET', 'POST'])

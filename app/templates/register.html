@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — AttendMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #ffffff;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #dash-canvas {
+            z-index: 1;
+        }
+
+        #wave-canvas {
+            z-index: 2;
+        }
+
+        /* ── Card ── */
+        .card-wrap {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            pointer-events: none;
+            overflow-y: auto;
+        }
+
+        .login-card {
+            pointer-events: auto;
+            width: 480px;
+            max-width: 95vw;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 24px;
+            border: 1px solid rgba(233, 30, 140, 0.2);
+            padding: 2rem;
+            box-shadow: 0 8px 40px rgba(233, 30, 140, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+            position: relative;
+            animation: cardIn .6s cubic-bezier(.23, 1, .32, 1) both;
+            margin: 2rem 0;
+        }
+
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .card-stripe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #e91e8c, #ff4db8, transparent);
+            border-radius: 24px 24px 0 0;
+            animation: stripe 3s ease-in-out infinite;
+        }
+
+        @keyframes stripe {
+
+            0%,
+            100% {
+                opacity: .3
+            }
+
+            50% {
+                opacity: 1
+            }
+        }
+
+        /* Logo */
+        .logo-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #e91e8c, #ff4db8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: #fff;
+            margin: 0 auto 1rem;
+            box-shadow: 0 0 30px rgba(233, 30, 140, .35);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .login-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: -.5px;
+            background: linear-gradient(135deg, #1a1a2e 30%, #e91e8c);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-sub {
+            color: #888;
+            font-size: .8rem;
+            margin-top: .25rem;
+        }
+
+        /* Alerts */
+        .flash-msg {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .7rem 1rem;
+            border-radius: 10px;
+            font-size: .85rem;
+            margin-bottom: 1rem;
+        }
+
+        .flash-danger {
+            background: rgba(233, 30, 140, .07);
+            color: #c2185b;
+            border: 1px solid rgba(233, 30, 140, .2);
+        }
+
+        .flash-success {
+            background: rgba(0, 180, 100, .07);
+            color: #00875a;
+            border: 1px solid rgba(0, 180, 100, .2);
+        }
+
+        /* Form */
+        .f-label {
+            display: block;
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            color: #555;
+            margin-bottom: .25rem;
+        }
+
+        .f-group {
+            margin-bottom: 0.85rem;
+        }
+
+        .f-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .f-icon {
+            position: absolute;
+            left: .85rem;
+            color: #e91e8c;
+            font-size: .8rem;
+            z-index: 1;
+        }
+
+        .f-input,
+        .f-select {
+            width: 100%;
+            padding: .6rem .9rem .6rem 2.4rem;
+            background: rgba(255, 255, 255, .9);
+            border: 1.5px solid rgba(233, 30, 140, .2);
+            border-radius: 10px;
+            color: #1a1a2e;
+            font-size: .875rem;
+            font-family: inherit;
+            transition: all .2s;
+        }
+
+        .f-select {
+            padding-left: 2.4rem;
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .f-input:focus,
+        .f-select:focus {
+            outline: none;
+            border-color: #e91e8c;
+            box-shadow: 0 0 0 3px rgba(233, 30, 140, .1);
+        }
+
+        .btn-sign {
+            width: 100%;
+            padding: .85rem;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #e91e8c, #ff4db8);
+            color: #fff;
+            font-size: .95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            box-shadow: 0 4px 20px rgba(233, 30, 140, .3);
+            transition: all .2s;
+            margin-top: 1rem;
+        }
+
+        .btn-sign:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(233, 30, 140, .4);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-full {
+            grid-column: 1 / -1;
+        }
+
+        #studentIdGroup {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="dash-canvas"></canvas>
+    <canvas id="wave-canvas"></canvas>
+
+    <div class="card-wrap">
+        <div class="login-card">
+            <div class="card-stripe"></div>
+
+            <div class="login-header">
+                <div class="logo-box"><i class="fas fa-user-plus"></i></div>
+                <h1 class="login-title">Join AttendMS</h1>
+                <p class="login-sub">Create your account to get started</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for cat, msg in messages %}
+            <div class="flash-msg flash-{{ cat }}">
+                <i class="fas fa-{% if cat == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                {{ msg }}
+            </div>
+            {% endfor %}{% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('auth.register') }}">
+                <div class="form-grid">
+                    <div class="f-group form-full">
+                        <label class="f-label">Full Name</label>
+                        <div class="f-wrap">
+                            <i class="fas fa-id-card f-icon"></i>
+                            <input class="f-input" type="text" name="full_name" placeholder="John Doe" required>
+                        </div>
+                    </div>
+
+                    <div class="f-group">
+                        <label class="f-label">Username</label>
+                        <div class="f-wrap">
+                            <i class="fas fa-user f-icon"></i>
+                            <input class="f-input" type="text" name="username" placeholder="johndoe123" required>
+                        </div>
+                    </div>
+
+                    <div class="f-group">
+                        <label class="f-label">Email (Optional)</label>
+                        <div class="f-wrap">
+                            <i class="fas fa-envelope f-icon"></i>
+                            <input class="f-input" type="email" name="email" placeholder="john@example.com">
+                        </div>
+                    </div>
+
+                    <div class="f-group">
+                        <label class="f-label">Role</label>
+                        <div class="f-wrap">
+                            <i class="fas fa-users f-icon"></i>
+                            <select class="f-select" name="role" id="roleSelect" onchange="toggleStudentId()">
+                                <option value="student">Student</option>
+                                <option value="teacher">Teacher</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="f-group" id="studentIdGroup">
+                        <label class="f-label">Student ID</label>
+                        <div class="f-wrap">
+                            <i class="fas fa-graduation-cap f-icon"></i>
+                            <input class="f-input" type="text" name="student_id" id="studentIdInput"
+                                placeholder="S12345">
+                        </div>
+                    </div>
+
+                    <div class="f-group form-full">
+                        <label class="f-label">Password</label>
+                        <div class="f-wrap">
+                            <i class="fas fa-lock f-icon"></i>
+                            <input class="f-input" type="password" name="password" placeholder="Create a password"
+                                required minlength="6">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-sign">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #666;">
+                Already have an account?
+                <a href="{{ url_for('auth.login') }}"
+                    style="color: #e91e8c; font-weight: 700; text-decoration: none;">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleStudentId() {
+            const role = document.getElementById('roleSelect').value;
+            const group = document.getElementById('studentIdGroup');
+            const input = document.getElementById('studentIdInput');
+            if (role === 'student') {
+                group.style.display = 'block';
+                input.required = true;
+            } else {
+                group.style.display = 'none';
+                input.required = false;
+            }
+        }
+        // Run once on load
+        toggleStudentId();
+
+        /* CANVAS COPIED FROM LOGIN */
+        const dc = document.getElementById('dash-canvas');
+        const dctx = dc.getContext('2d');
+        const wc = document.getElementById('wave-canvas');
+        const wctx = wc.getContext('2d');
+        let W = 0, H = 0;
+        function resize() {
+            W = dc.width = wc.width = window.innerWidth;
+            H = dc.height = wc.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        var tick = 0;
+        function loop() {
+            tick++;
+            dctx.clearRect(0, 0, W, H);
+            wctx.clearRect(0, 0, W, H);
+            // Simple wave for register page to keep it clean
+            wctx.beginPath();
+            wctx.moveTo(0, H);
+            for (let x = 0; x <= W; x += 5) {
+                let y = H * 0.8 + Math.sin(tick * 0.02 + x * 0.01) * 30;
+                wctx.lineTo(x, y);
+            }
+            wctx.lineTo(W, H);
+            wctx.fillStyle = 'rgba(233, 30, 140, 0.05)';
+            wctx.fill();
+            requestAnimationFrame(loop);
+        }
+        loop();
+    </script>
+</body>
+
+</html>

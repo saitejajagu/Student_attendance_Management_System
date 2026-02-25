@@ -1906,7 +1906,7 @@ textarea.form-control {
         transition: left var(--transition);
     }
 
-    .sidebar.open {
+    .sidebar.mobile-open {
         left: 0;
     }
 
@@ -2341,16 +2341,31 @@ textarea:focus {
     margin-bottom: 1rem;
 }
 
-/* ── SIDEBAR SLIDE TOGGLE ── */
 @media (max-width: 991px) {
     .sidebar {
-        transform: translateX(-280px);
+        position: fixed;
+        left: 0;
+        transform: translateX(-100%);
         transition: transform 0.3s ease;
         visibility: visible !important;
+        z-index: 1000;
     }
 
     .sidebar.mobile-open {
         transform: translateX(0);
+    }
+}
+
+/* ── DESKTOP COLLAPSE ── */
+@media (min-width: 992px) {
+    .sidebar.collapsed {
+        width: 0 !important;
+        min-width: 0 !important;
+        border-right: none !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        opacity: 0;
+        pointer-events: none;
     }
 }
 
